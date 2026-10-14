@@ -42,6 +42,17 @@ python app.py
 
 7. Open http://127.0.0.1:5000 in your browser.
 
+### Running the tests
+
+From the `github-copilot-python/starter` directory, install the dependencies (including pytest) and run the test suite:
+
+```bash
+pip install -r requirements.txt
+python -m pytest
+```
+
+The baseline tests cover the Flask page and API routes, along with Sudoku board creation, safety checks, solution generation, and puzzle clues. To run only one test module, use `python -m pytest tests/test_app.py` or `python -m pytest tests/test_sudoku_logic.py`.
+
 ## Project Instructions
 
 Use GitHub Copilot to refactor the code for this game to add more advanced features. The goal is to create a more modern and maintainable codebase and add additional functionality to the final product. You can use any combination of code completion and chat features, like Ask, Edit, or Agent modes.
