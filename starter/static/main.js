@@ -1,6 +1,7 @@
 // Client-side rendering and interaction for the Flask-backed Sudoku
 const SIZE = 9;
 const LEADERBOARD_KEY = 'sudokuTop10';
+const THEME_KEY = 'sudokuTheme';
 let puzzle = [];
 let timerInterval = null;
 let timerStartedAt = null;
@@ -9,6 +10,46 @@ let hintsUsed = 0;
 let activeDifficulty = 'medium';
 let gameSolved = false;
 let pendingCompletionSeconds = null;
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  document.getElementById('theme-toggle').setAttribute('aria-pressed', String(theme === 'dark'));
+}
+
+function showThemeError(message) {
+  const status = document.getElementById('theme-message');
+  status.textContent = message;
+  status.hidden = false;
+}
+
+function initializeTheme() {
+  let theme;
+  try {
+    theme = localStorage.getItem(THEME_KEY);
+  } catch {
+    applyTheme('light');
+    showThemeError('Saved theme could not be read. You can still switch themes.');
+    return;
+  }
+  if (theme !== null && theme !== 'light' && theme !== 'dark') {
+    applyTheme('light');
+    showThemeError('The saved theme is invalid. Select a theme to save a new preference.');
+    return;
+  }
+  applyTheme(theme || 'light');
+}
+
+function toggleTheme() {
+  const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(theme);
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    showThemeError('Theme changed, but your preference could not be saved.');
+    return;
+  }
+  document.getElementById('theme-message').hidden = true;
+}
 
 function readLeaderboard() {
   let scores;
@@ -315,6 +356,8 @@ async function getHint() {
 
 // Wire buttons
 window.addEventListener('load', () => {
+  initializeTheme();
+  document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
   document.getElementById('difficulty').addEventListener('change', (event) => {
     const difficulty = event.target.selectedOptions[0].textContent;
     document.getElementById('difficulty-message').innerText =

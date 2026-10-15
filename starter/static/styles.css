@@ -1,6 +1,49 @@
+:root {
+    color-scheme: light;
+    --page-bg: #f4f4f4;
+    --text: #333;
+    --surface: #fff;
+    --cell-bg: #fafafa;
+    --focus-bg: #e0f7fa;
+    --prefilled-bg: #e0e0e0;
+    --border: #bbb;
+    --grid: #333;
+    --incorrect-bg: #ffcdd2;
+    --incorrect-border: #b71c1c;
+    --hint-bg: #c8e6c9;
+    --hint-text: #1b5e20;
+    --success: #2e7d32;
+    --error: #b71c1c;
+    --button-bg: #1565c0;
+    --button-hover: #0d47a1;
+    --button-text: #fff;
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --page-bg: #121820;
+    --text: #e8edf3;
+    --surface: #1c2633;
+    --cell-bg: #202c3b;
+    --focus-bg: #304b62;
+    --prefilled-bg: #364355;
+    --border: #79899c;
+    --grid: #c5d0de;
+    --incorrect-bg: #632c34;
+    --incorrect-border: #ff9ba5;
+    --hint-bg: #204c38;
+    --hint-text: #c0f2d2;
+    --success: #a5e4b5;
+    --error: #ffb4ba;
+    --button-bg: #a9cfff;
+    --button-hover: #d0e3ff;
+    --button-text: #122239;
+}
+
 body {
     font-family: Arial, sans-serif;
-    background: #f4f4f4;
+    background: var(--page-bg);
+    color: var(--text);
     text-align: center;
     margin: 0;
     padding: 0;
@@ -8,12 +51,12 @@ body {
 
 h1 {
     margin-top: 30px;
-    color: #333;
+    color: var(--text);
 }
 
 .game-timer {
     margin: 12px auto;
-    color: #333;
+    color: var(--text);
     font-size: 20px;
     font-weight: bold;
     font-variant-numeric: tabular-nums;
@@ -27,8 +70,8 @@ h1 {
 #sudoku-board {
     display: inline-block;
     margin: 30px auto;
-    border: 4px solid #333;
-    background: #fff;
+    border: 4px solid var(--grid);
+    background: var(--surface);
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
@@ -39,50 +82,52 @@ h1 {
 .sudoku-cell {
     width: 40px;
     height: 40px;
-    border: 1px solid #bbb;
+    border: 1px solid var(--border);
     text-align: center;
     font-size: 20px;
     outline: none;
-    background: #fafafa;
+    background: var(--cell-bg);
+    color: var(--text);
+    opacity: 1;
     transition: background 0.2s;
 }
 
 .sudoku-cell:focus {
-    background: #e0f7fa;
+    background: var(--focus-bg);
 }
 
 .sudoku-cell.incorrect {
-    background: #ffcdd2;
-    border-color: #b71c1c;
-    box-shadow: inset 0 0 0 1px #b71c1c;
+    background: var(--incorrect-bg);
+    border-color: var(--incorrect-border);
+    box-shadow: inset 0 0 0 1px var(--incorrect-border);
 }
 
 .sudoku-cell.incorrect:focus {
-    background: #ffcdd2;
+    background: var(--incorrect-bg);
 }
 
 .sudoku-cell.prefilled {
-    background: #e0e0e0;
+    background: var(--prefilled-bg);
     font-weight: bold;
-    color: #333;
+    color: var(--text);
 }
 
 .sudoku-cell.hinted {
-    background: #c8e6c9;
-    border-color: #2e7d32;
-    box-shadow: inset 0 0 0 1px #2e7d32;
-    color: #1b5e20;
+    background: var(--hint-bg);
+    border-color: var(--success);
+    box-shadow: inset 0 0 0 1px var(--success);
+    color: var(--hint-text);
     font-weight: bold;
 }
 
 .sudoku-cell:nth-child(3),
 .sudoku-cell:nth-child(6) {
-    border-right: 3px solid #333;
+    border-right: 3px solid var(--grid);
 }
 
 .sudoku-row:nth-child(3) .sudoku-cell,
 .sudoku-row:nth-child(6) .sudoku-cell {
-    border-bottom: 3px solid #333;
+    border-bottom: 3px solid var(--grid);
 }
 
 .controls {
@@ -102,20 +147,34 @@ h1 {
     font-size: 16px;
 }
 
+select,
+.score-entry input {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+button:focus-visible,
+select:focus-visible,
+.score-entry input:focus-visible {
+    outline: 2px solid var(--grid);
+    outline-offset: 3px;
+}
+
 button {
     padding: 8px 18px;
     margin: 0 8px;
     font-size: 16px;
     border: none;
-    background: #1976d2;
-    color: #fff;
+    background: var(--button-bg);
+    color: var(--button-text);
     border-radius: 4px;
     cursor: pointer;
     transition: background 0.2s;
 }
 
 button:hover {
-    background: #1565c0;
+    background: var(--button-hover);
 }
 
 #message {
@@ -125,11 +184,15 @@ button:hover {
 }
 
 #message.error {
-    color: #d32f2f;
+    color: var(--error);
 }
 
 #message.success {
-    color: #2e7d32;
+    color: var(--success);
+}
+
+#theme-message {
+    color: var(--error);
 }
 
 .leaderboard-section {
@@ -138,22 +201,22 @@ button:hover {
 }
 
 .leaderboard-section h2 {
-    color: #333;
+    color: var(--text);
 }
 
 #leaderboard {
     width: 100%;
     border-collapse: collapse;
-    background: #fff;
+    background: var(--surface);
 }
 
 #leaderboard th,
 #leaderboard td {
     padding: 8px 12px;
-    border: 1px solid #bbb;
+    border: 1px solid var(--border);
     text-align: left;
 }
 
 #leaderboard th {
-    background: #e0e0e0;
+    background: var(--prefilled-bg);
 }
