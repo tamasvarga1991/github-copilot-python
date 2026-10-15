@@ -39,6 +39,60 @@ def fill_board(board):
                 return False
     return True
 
+def count_solutions(board):
+    """Return the number of solutions, capped at two."""
+    working_board = deep_copy(board)
+
+    for row in range(SIZE):
+        for col in range(SIZE):
+            value = working_board[row][col]
+            if value == EMPTY:
+                continue
+            if value < 1 or value > SIZE:
+                return 0
+            working_board[row][col] = EMPTY
+            safe = is_safe(working_board, row, col, value)
+            working_board[row][col] = value
+            if not safe:
+                return 0
+
+    def search():
+        best_cell = None
+        best_candidates = None
+
+        for row in range(SIZE):
+            for col in range(SIZE):
+                if working_board[row][col] != EMPTY:
+                    continue
+                candidates = [
+                    num for num in range(1, SIZE + 1)
+                    if is_safe(working_board, row, col, num)
+                ]
+                if not candidates:
+                    return 0
+                if best_candidates is None or len(candidates) < len(best_candidates):
+                    best_cell = (row, col)
+                    best_candidates = candidates
+                    if len(candidates) == 1:
+                        break
+            if best_candidates is not None and len(best_candidates) == 1:
+                break
+
+        if best_cell is None:
+            return 1
+
+        row, col = best_cell
+        solution_count = 0
+        for candidate in best_candidates:
+            working_board[row][col] = candidate
+            solution_count += search()
+            working_board[row][col] = EMPTY
+            if solution_count >= 2:
+                return 2
+        return solution_count
+
+    return search()
+
 def remove_cells(board, clues):
     attempts = SIZE * SIZE - clues
     while attempts > 0:

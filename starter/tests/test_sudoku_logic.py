@@ -71,6 +71,36 @@ def test_fill_board_creates_a_valid_completed_solution():
     assert_valid_solution(board)
 
 
+def test_count_solutions_returns_zero_for_inconsistent_puzzle():
+    puzzle = sudoku_logic.create_empty_board()
+    puzzle[0][0] = 1
+    puzzle[0][1] = 1
+
+    assert sudoku_logic.count_solutions(puzzle) == 0
+
+
+def test_count_solutions_returns_one_for_a_completed_valid_board():
+    solution = [
+        [5, 3, 4, 6, 7, 8, 9, 1, 2],
+        [6, 7, 2, 1, 9, 5, 3, 4, 8],
+        [1, 9, 8, 3, 4, 2, 5, 6, 7],
+        [8, 5, 9, 7, 6, 1, 4, 2, 3],
+        [4, 2, 6, 8, 5, 3, 7, 9, 1],
+        [7, 1, 3, 9, 2, 4, 8, 5, 6],
+        [9, 6, 1, 5, 3, 7, 2, 8, 4],
+        [2, 8, 7, 4, 1, 9, 6, 3, 5],
+        [3, 4, 5, 2, 8, 6, 1, 7, 9],
+    ]
+
+    assert sudoku_logic.count_solutions(solution) == 1
+
+
+def test_count_solutions_caps_multiple_solutions_at_two():
+    puzzle = sudoku_logic.create_empty_board()
+
+    assert sudoku_logic.count_solutions(puzzle) == 2
+
+
 def test_generate_puzzle_returns_matching_solution_and_requested_clue_count():
     clues = 35
 
