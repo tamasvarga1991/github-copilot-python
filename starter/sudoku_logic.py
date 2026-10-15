@@ -5,6 +5,11 @@ SIZE = 9
 EMPTY = 0
 MIN_CLUES = 17
 MAX_GENERATION_ATTEMPTS = 20
+DIFFICULTY_CLUES = {
+    "easy": 40,
+    "medium": 35,
+    "hard": 30,
+}
 
 def deep_copy(board):
     return copy.deepcopy(board)

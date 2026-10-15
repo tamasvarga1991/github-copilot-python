@@ -116,6 +116,22 @@ def test_generate_puzzle_returns_matching_solution_and_requested_clue_count():
     )
 
 
+@pytest.mark.parametrize(
+    ("difficulty", "clues"),
+    [("easy", 40), ("medium", 35), ("hard", 30)],
+)
+def test_difficulty_profiles_generate_unique_puzzles_with_ordered_clues(
+    difficulty, clues
+):
+    puzzle, solution = sudoku_logic.generate_puzzle(
+        sudoku_logic.DIFFICULTY_CLUES[difficulty]
+    )
+
+    assert sum(value != sudoku_logic.EMPTY for row in puzzle for value in row) == clues
+    assert sudoku_logic.count_solutions(puzzle) == 1
+    assert_valid_solution(solution)
+
+
 @pytest.mark.parametrize("clues", [16, 82])
 def test_generate_puzzle_rejects_clue_counts_outside_unique_sudoku_range(clues):
     with pytest.raises(ValueError, match="clues must be between"):

@@ -20,6 +20,9 @@ def test_index_renders_sudoku_page(client):
     assert response.status_code == 200
     assert b"Sudoku Game" in response.data
     assert b'id="sudoku-board"' in response.data
+    assert b'<option value="easy">Easy</option>' in response.data
+    assert b'<option value="medium" selected>Medium</option>' in response.data
+    assert b'<option value="hard">Hard</option>' in response.data
 
 
 def test_new_game_returns_and_stores_generated_puzzle(client, monkeypatch):
@@ -36,6 +39,62 @@ def test_new_game_returns_and_stores_generated_puzzle(client, monkeypatch):
     assert response.status_code == 200
     assert response.json == {"puzzle": puzzle}
     assert sudoku_app.CURRENT == {"puzzle": puzzle, "solution": solution}
+
+
+@pytest.mark.parametrize(
+    ("difficulty", "expected_clues"),
+    [("easy", 40), ("medium", 35), ("hard", 30)],
+)
+def test_new_game_maps_difficulty_to_clue_count(
+    client, monkeypatch, difficulty, expected_clues
+):
+    puzzle = [[0 for _ in range(9)] for _ in range(9)]
+    solution = [[1 for _ in range(9)] for _ in range(9)]
+    generated_with = []
+
+    def generate_puzzle(clues):
+        generated_with.append(clues)
+        return puzzle, solution
+
+    monkeypatch.setattr(sudoku_app.sudoku_logic, "generate_puzzle", generate_puzzle)
+
+    response = client.get(f"/new?difficulty={difficulty}")
+
+    assert response.status_code == 200
+    assert response.json == {"puzzle": puzzle}
+    assert generated_with == [expected_clues]
+
+
+def test_new_game_rejects_unknown_difficulty(client, monkeypatch):
+    generated_with = []
+
+    def generate_puzzle(clues):
+        generated_with.append(clues)
+        return [], []
+
+    monkeypatch.setattr(sudoku_app.sudoku_logic, "generate_puzzle", generate_puzzle)
+
+    response = client.get("/new?difficulty=expert")
+
+    assert response.status_code == 400
+    assert response.json == {"error": "Difficulty must be easy, medium, or hard"}
+    assert generated_with == []
+
+
+def test_new_game_keeps_supporting_numeric_clue_count(client, monkeypatch):
+    generated_with = []
+    puzzle = [[0 for _ in range(9)] for _ in range(9)]
+    solution = [[1 for _ in range(9)] for _ in range(9)]
+    monkeypatch.setattr(
+        sudoku_app.sudoku_logic,
+        "generate_puzzle",
+        lambda clues: (generated_with.append(clues) or puzzle, solution),
+    )
+
+    response = client.get("/new?clues=42")
+
+    assert response.status_code == 200
+    assert generated_with == [42]
 
 
 def test_check_without_active_game_returns_error(client):
