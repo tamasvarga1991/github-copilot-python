@@ -49,6 +49,53 @@ body {
     padding: 0;
 }
 
+.theme-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    cursor: pointer;
+}
+
+.theme-switch input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.theme-switch-track {
+    width: 44px;
+    height: 24px;
+    border: 2px solid var(--grid);
+    border-radius: 16px;
+    background: var(--prefilled-bg);
+}
+
+.theme-switch-track::before {
+    content: "";
+    display: block;
+    width: 18px;
+    height: 18px;
+    margin: 3px;
+    border-radius: 50%;
+    background: var(--text);
+}
+
+.theme-switch input:checked + .theme-switch-track {
+    background: var(--button-bg);
+}
+
+.theme-switch input:checked + .theme-switch-track::before {
+    transform: translateX(20px);
+    background: var(--button-text);
+}
+
+.theme-switch input:focus-visible + .theme-switch-track {
+    outline: 2px solid var(--grid);
+    outline-offset: 3px;
+}
+
 h1 {
     margin-top: 30px;
     color: var(--text);

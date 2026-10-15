@@ -7,7 +7,11 @@
 </head>
 <body>
   <h1>Sudoku Game</h1>
-  <button id="theme-toggle" type="button" aria-pressed="false">Dark Mode</button>
+  <label class="theme-switch">
+    <input id="theme-toggle" type="checkbox" role="switch" aria-label="Dark mode">
+    <span class="theme-switch-track" aria-hidden="true"></span>
+    <span id="theme-label">Light Mode</span>
+  </label>
   <p id="theme-message" role="status" aria-live="polite" hidden></p>
   <p class="game-timer">Time: <span id="timer" role="timer" aria-label="Elapsed time" data-elapsed-seconds="0">00:00</span></p>
   <div id="sudoku-board"></div>

@@ -19,7 +19,8 @@ def test_index_renders_sudoku_page(client):
 
     assert response.status_code == 200
     assert b"Sudoku Game" in response.data
-    assert b'id="theme-toggle" type="button" aria-pressed="false">Dark Mode</button>' in response.data
+    assert b'id="theme-toggle" type="checkbox" role="switch" aria-label="Dark mode">' in response.data
+    assert b'id="theme-label">Light Mode</span>' in response.data
     assert b'id="theme-message" role="status" aria-live="polite" hidden' in response.data
     assert b'id="timer" role="timer"' in response.data
     assert b'data-elapsed-seconds="0">00:00</span>' in response.data

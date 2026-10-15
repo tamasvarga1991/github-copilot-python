@@ -13,7 +13,8 @@ let pendingCompletionSeconds = null;
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
-  document.getElementById('theme-toggle').setAttribute('aria-pressed', String(theme === 'dark'));
+  document.getElementById('theme-toggle').checked = theme === 'dark';
+  document.getElementById('theme-label').textContent = theme === 'dark' ? 'Dark Mode' : 'Light Mode';
 }
 
 function showThemeError(message) {
@@ -357,7 +358,7 @@ async function getHint() {
 // Wire buttons
 window.addEventListener('load', () => {
   initializeTheme();
-  document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+  document.getElementById('theme-toggle').addEventListener('change', toggleTheme);
   document.getElementById('difficulty').addEventListener('change', (event) => {
     const difficulty = event.target.selectedOptions[0].textContent;
     document.getElementById('difficulty-message').innerText =
