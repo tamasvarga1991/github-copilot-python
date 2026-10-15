@@ -225,6 +225,8 @@ async function newGame() {
     return;
   }
   activeDifficulty = difficulty;
+  document.getElementById('current-difficulty').textContent =
+    activeDifficulty.charAt(0).toUpperCase() + activeDifficulty.slice(1);
   hintsUsed = 0;
   gameSolved = false;
   pendingCompletionSeconds = null;
@@ -344,6 +346,7 @@ async function getHint() {
   }
 
   const input = inputs[data.row * SIZE + data.col];
+  const correctingEntry = input.value !== '';
   input.value = data.value;
   input.disabled = true;
   input.classList.remove('incorrect');
@@ -352,7 +355,9 @@ async function getHint() {
   input.setAttribute('aria-invalid', 'false');
   hintsUsed += 1;
   msg.className = 'success';
-  msg.innerText = 'Hint used: one correct cell has been filled and locked.';
+  msg.innerText = correctingEntry
+    ? 'Hint used: one incorrect entry has been corrected and locked.'
+    : 'Hint used: one correct cell has been filled and locked.';
 }
 
 // Wire buttons

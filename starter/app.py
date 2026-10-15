@@ -75,10 +75,17 @@ def get_hint():
         if puzzle[row][col] == sudoku_logic.EMPTY
         and board[row][col] == sudoku_logic.EMPTY
     ]
-    if not empty_cells:
-        return jsonify({'error': 'No empty cells available for a hint'}), 400
+    candidates = empty_cells or [
+        (row, col)
+        for row in range(sudoku_logic.SIZE)
+        for col in range(sudoku_logic.SIZE)
+        if puzzle[row][col] == sudoku_logic.EMPTY
+        and board[row][col] != solution[row][col]
+    ]
+    if not candidates:
+        return jsonify({'error': 'No empty or incorrect cells available for a hint'}), 400
 
-    row, col = random.choice(empty_cells)
+    row, col = random.choice(candidates)
     return jsonify({'row': row, 'col': col, 'value': solution[row][col]})
 
 if __name__ == '__main__':

@@ -25,6 +25,8 @@ def test_index_renders_sudoku_page(client):
     assert b'id="timer" role="timer"' in response.data
     assert b'data-elapsed-seconds="0">00:00</span>' in response.data
     assert b'id="sudoku-board"' in response.data
+    assert b'Current difficulty:' in response.data
+    assert b'id="current-difficulty" aria-live="polite">No game started</strong>' in response.data
     assert b'<option value="easy">Easy</option>' in response.data
     assert b'<option value="medium" selected>Medium</option>' in response.data
     assert b'<option value="hard">Hard</option>' in response.data
@@ -182,7 +184,54 @@ def test_hint_returns_error_when_no_original_empty_cells_remain(client):
     response = client.post("/hint", json={"board": [[1] * 9 for _ in range(9)]})
 
     assert response.status_code == 400
-    assert response.json == {"error": "No empty cells available for a hint"}
+    assert response.json == {"error": "No empty or incorrect cells available for a hint"}
+
+
+def test_hint_corrects_one_wrong_entry_after_empty_cells_are_filled(client, monkeypatch):
+    solution = [
+        [(row * 3 + row // 3 + col) % 9 + 1 for col in range(9)]
+        for row in range(9)
+    ]
+    puzzle = copy.deepcopy(solution)
+    puzzle[0][0] = 0
+    puzzle[0][1] = 0
+    puzzle[0][2] = 0
+    board = copy.deepcopy(solution)
+    board[0][0] = 9
+    board[0][1] = 8
+    sudoku_app.CURRENT["puzzle"] = puzzle
+    sudoku_app.CURRENT["solution"] = solution
+    before = copy.deepcopy(sudoku_app.CURRENT)
+    monkeypatch.setattr(sudoku_app.random, "choice", lambda cells: cells[0])
+
+    for expected_col in (0, 1):
+        response = client.post("/hint", json={"board": board})
+
+        assert response.status_code == 200
+        assert response.json == {
+            "row": 0, "col": expected_col, "value": solution[0][expected_col]
+        }
+        board[response.json["row"]][response.json["col"]] = response.json["value"]
+
+    assert board == solution
+    assert sudoku_app.CURRENT == before
+    assert sudoku_app.sudoku_logic.count_solutions(puzzle) == 1
+    response = client.post("/hint", json={"board": board})
+    assert response.status_code == 400
+
+
+def test_hint_prefers_empty_cells_over_wrong_entries(client, monkeypatch):
+    sudoku_app.CURRENT["puzzle"] = [[0] * 9 for _ in range(9)]
+    sudoku_app.CURRENT["solution"] = [[1] * 9 for _ in range(9)]
+    board = [[1] * 9 for _ in range(9)]
+    board[0][0] = 9
+    board[0][1] = 0
+    monkeypatch.setattr(sudoku_app.random, "choice", lambda cells: cells[0])
+
+    response = client.post("/hint", json={"board": board})
+
+    assert response.status_code == 200
+    assert response.json == {"row": 0, "col": 1, "value": 1}
 
 
 def test_hint_rejects_invalid_board_payload(client):
