@@ -3,6 +3,8 @@ import random
 
 SIZE = 9
 EMPTY = 0
+MIN_CLUES = 17
+MAX_GENERATION_ATTEMPTS = 20
 
 def deep_copy(board):
     return copy.deepcopy(board)
@@ -94,18 +96,42 @@ def count_solutions(board):
     return search()
 
 def remove_cells(board, clues):
-    attempts = SIZE * SIZE - clues
-    while attempts > 0:
-        row = random.randrange(SIZE)
-        col = random.randrange(SIZE)
-        if board[row][col] != EMPTY:
+    target_removals = SIZE * SIZE - clues
+    if target_removals == 0:
+        return True
+
+    cells = [(row, col) for row in range(SIZE) for col in range(SIZE)]
+    random.shuffle(cells)
+    removed = 0
+
+    for row, col in cells:
+        value = board[row][col]
+        if value != EMPTY:
             board[row][col] = EMPTY
-            attempts -= 1
+            if count_solutions(board) == 1:
+                removed += 1
+                if removed == target_removals:
+                    return True
+            else:
+                board[row][col] = value
+
+    return removed == target_removals
 
 def generate_puzzle(clues=35):
-    board = create_empty_board()
-    fill_board(board)
-    solution = deep_copy(board)
-    remove_cells(board, clues)
-    puzzle = deep_copy(board)
-    return puzzle, solution
+    if not MIN_CLUES <= clues <= SIZE * SIZE:
+        raise ValueError(
+            f"clues must be between {MIN_CLUES} and {SIZE * SIZE}"
+        )
+
+    for _ in range(MAX_GENERATION_ATTEMPTS):
+        solution = create_empty_board()
+        if not fill_board(solution):
+            continue
+        puzzle = deep_copy(solution)
+        if remove_cells(puzzle, clues):
+            return puzzle, solution
+
+    raise RuntimeError(
+        f"Unable to generate a unique puzzle with exactly {clues} clues "
+        f"after {MAX_GENERATION_ATTEMPTS} attempts"
+    )
