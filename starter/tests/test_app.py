@@ -23,6 +23,7 @@ def test_index_renders_sudoku_page(client):
     assert b'<option value="easy">Easy</option>' in response.data
     assert b'<option value="medium" selected>Medium</option>' in response.data
     assert b'<option value="hard">Hard</option>' in response.data
+    assert b'id="hint"' in response.data
     assert b'id="message" role="status" aria-live="polite"' in response.data
 
 
@@ -129,3 +130,50 @@ def test_check_returns_no_incorrect_cells_for_a_correct_board(client):
 
     assert response.status_code == 200
     assert response.json == {"incorrect": []}
+
+
+def test_hint_returns_solution_for_one_currently_empty_puzzle_cell(client, monkeypatch):
+    puzzle = [[0 for _ in range(9)] for _ in range(9)]
+    solution = [[1 for _ in range(9)] for _ in range(9)]
+    puzzle[0][1] = 4
+    solution[0][0] = 7
+    solution[0][1] = 4
+    sudoku_app.CURRENT["puzzle"] = puzzle
+    sudoku_app.CURRENT["solution"] = solution
+    board = copy.deepcopy(puzzle)
+    board[0][0] = 0
+    board[0][2] = 9
+    monkeypatch.setattr(sudoku_app.random, "choice", lambda cells: cells[0])
+
+    response = client.post("/hint", json={"board": board})
+
+    assert response.status_code == 200
+    assert response.json == {"row": 0, "col": 0, "value": 7}
+    assert sudoku_app.CURRENT["puzzle"] == puzzle
+
+
+def test_hint_returns_error_when_no_game_is_active(client):
+    response = client.post("/hint", json={"board": [[0] * 9 for _ in range(9)]})
+
+    assert response.status_code == 400
+    assert response.json == {"error": "No game in progress"}
+
+
+def test_hint_returns_error_when_no_original_empty_cells_remain(client):
+    sudoku_app.CURRENT["puzzle"] = [[1 for _ in range(9)] for _ in range(9)]
+    sudoku_app.CURRENT["solution"] = [[1 for _ in range(9)] for _ in range(9)]
+
+    response = client.post("/hint", json={"board": [[1] * 9 for _ in range(9)]})
+
+    assert response.status_code == 400
+    assert response.json == {"error": "No empty cells available for a hint"}
+
+
+def test_hint_rejects_invalid_board_payload(client):
+    sudoku_app.CURRENT["puzzle"] = [[0 for _ in range(9)] for _ in range(9)]
+    sudoku_app.CURRENT["solution"] = [[1 for _ in range(9)] for _ in range(9)]
+
+    response = client.post("/hint", json={"board": [[0] * 8 for _ in range(9)]})
+
+    assert response.status_code == 400
+    assert response.json == {"error": "A valid 9x9 board is required"}

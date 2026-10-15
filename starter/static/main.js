@@ -102,10 +102,46 @@ async function checkSolution() {
   }
 }
 
+async function getHint() {
+  const inputs = document.getElementById('sudoku-board').getElementsByTagName('input');
+  const board = [];
+  for (let row = 0; row < SIZE; row++) {
+    board[row] = [];
+    for (let col = 0; col < SIZE; col++) {
+      const value = inputs[row * SIZE + col].value;
+      board[row][col] = value ? parseInt(value, 10) : 0;
+    }
+  }
+
+  const res = await fetch('/hint', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({board})
+  });
+  const data = await res.json();
+  const msg = document.getElementById('message');
+  if (!res.ok || data.error) {
+    msg.className = 'error';
+    msg.innerText = data.error || 'Unable to provide a hint.';
+    return;
+  }
+
+  const input = inputs[data.row * SIZE + data.col];
+  input.value = data.value;
+  input.disabled = true;
+  input.classList.remove('incorrect');
+  input.classList.add('hinted');
+  input.setAttribute('aria-label', `Hint: ${data.value}`);
+  input.setAttribute('aria-invalid', 'false');
+  msg.className = 'success';
+  msg.innerText = 'Hint used: one correct cell has been filled and locked.';
+}
+
 // Wire buttons
 window.addEventListener('load', () => {
   document.getElementById('new-game').addEventListener('click', newGame);
   document.getElementById('check-solution').addEventListener('click', checkSolution);
+  document.getElementById('hint').addEventListener('click', getHint);
   // initialize
   newGame();
 });
