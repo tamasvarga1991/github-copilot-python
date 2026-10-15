@@ -38,14 +38,20 @@ h1 {
     background: #e0f7fa;
 }
 
+.sudoku-cell.incorrect {
+    background: #ffcdd2;
+    border-color: #b71c1c;
+    box-shadow: inset 0 0 0 1px #b71c1c;
+}
+
+.sudoku-cell.incorrect:focus {
+    background: #ffcdd2;
+}
+
 .sudoku-cell.prefilled {
     background: #e0e0e0;
     font-weight: bold;
     color: #333;
-}
-
-.sudoku-cell.incorrect {
-    background: #ffcdd2;
 }
 
 .sudoku-cell:nth-child(3),
@@ -81,5 +87,13 @@ button:hover {
 #message {
     margin-left: 20px;
     font-size: 16px;
+    font-weight: bold;
+}
+
+#message.error {
     color: #d32f2f;
+}
+
+#message.success {
+    color: #2e7d32;
 }

@@ -56,7 +56,9 @@ async function newGame() {
     return;
   }
   renderPuzzle(data.puzzle);
-  document.getElementById('message').innerText = '';
+  const msg = document.getElementById('message');
+  msg.className = '';
+  msg.innerText = '';
 }
 
 async function checkSolution() {
@@ -78,26 +80,25 @@ async function checkSolution() {
   });
   const data = await res.json();
   const msg = document.getElementById('message');
-  if (data.error) {
-    msg.style.color = '#d32f2f';
-    msg.innerText = data.error;
+  if (!res.ok || data.error) {
+    msg.className = 'error';
+    msg.innerText = data.error || 'Unable to check the puzzle.';
     return;
   }
   const incorrect = new Set(data.incorrect.map(x => x[0]*SIZE + x[1]));
   for (let idx = 0; idx < inputs.length; idx++) {
     const inp = inputs[idx];
     if (inp.disabled) continue;
-    inp.className = 'sudoku-cell';
-    if (incorrect.has(idx)) {
-      inp.className = 'sudoku-cell incorrect';
-    }
+    const isIncorrect = incorrect.has(idx);
+    inp.classList.toggle('incorrect', isIncorrect);
+    inp.setAttribute('aria-invalid', isIncorrect ? 'true' : 'false');
   }
   if (incorrect.size === 0) {
-    msg.style.color = '#388e3c';
+    msg.className = 'success';
     msg.innerText = 'Congratulations! You solved it!';
   } else {
-    msg.style.color = '#d32f2f';
-    msg.innerText = 'Some cells are incorrect.';
+    msg.className = 'error';
+    msg.innerText = `${incorrect.size} cell${incorrect.size === 1 ? ' is' : 's are'} incorrect or incomplete.`;
   }
 }
 

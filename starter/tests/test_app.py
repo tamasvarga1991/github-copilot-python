@@ -23,6 +23,7 @@ def test_index_renders_sudoku_page(client):
     assert b'<option value="easy">Easy</option>' in response.data
     assert b'<option value="medium" selected>Medium</option>' in response.data
     assert b'<option value="hard">Hard</option>' in response.data
+    assert b'id="message" role="status" aria-live="polite"' in response.data
 
 
 def test_new_game_returns_and_stores_generated_puzzle(client, monkeypatch):
@@ -117,3 +118,14 @@ def test_check_returns_coordinates_of_cells_that_differ(client):
 
     assert response.status_code == 200
     assert response.json == {"incorrect": [[0, 0], [4, 2]]}
+
+
+def test_check_returns_no_incorrect_cells_for_a_correct_board(client):
+    solution = [[0 for _ in range(9)] for _ in range(9)]
+    solution[0][0] = 5
+    sudoku_app.CURRENT["solution"] = solution
+
+    response = client.post("/check", json={"board": solution})
+
+    assert response.status_code == 200
+    assert response.json == {"incorrect": []}
