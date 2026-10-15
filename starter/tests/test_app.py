@@ -19,6 +19,8 @@ def test_index_renders_sudoku_page(client):
 
     assert response.status_code == 200
     assert b"Sudoku Game" in response.data
+    assert b'<meta name="viewport" content="width=device-width, initial-scale=1">' in response.data
+    assert b'class="leaderboard-scroll" role="region" aria-label="Top 10 scores table" tabindex="0"' in response.data
     assert b'id="theme-toggle" type="checkbox" role="switch" aria-label="Dark mode">' in response.data
     assert b'id="theme-label">Light Mode</span>' in response.data
     assert b'id="theme-message" role="status" aria-live="polite" hidden' in response.data

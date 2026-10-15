@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sudoku Game</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
@@ -36,6 +37,7 @@
   </div>
   <section class="leaderboard-section" aria-labelledby="leaderboard-heading">
     <h2 id="leaderboard-heading">Top 10 Scores</h2>
+    <div class="leaderboard-scroll" role="region" aria-label="Top 10 scores table" tabindex="0">
     <table id="leaderboard">
       <thead>
         <tr>
@@ -48,6 +50,7 @@
       </thead>
       <tbody></tbody>
     </table>
+    </div>
   </section>
   <script src="/static/main.js"></script>
 </body>
