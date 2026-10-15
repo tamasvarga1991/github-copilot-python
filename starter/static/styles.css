@@ -4,8 +4,10 @@
     --text: #333;
     --surface: #fff;
     --cell-bg: #fafafa;
+    --block-alt-bg: #edf2f7;
     --focus-bg: #e0f7fa;
     --prefilled-bg: #e0e0e0;
+    --block-alt-prefilled-bg: #d8e1eb;
     --border: #bbb;
     --grid: #333;
     --incorrect-bg: #ffcdd2;
@@ -25,8 +27,10 @@
     --text: #e8edf3;
     --surface: #1c2633;
     --cell-bg: #202c3b;
+    --block-alt-bg: #29394b;
     --focus-bg: #304b62;
     --prefilled-bg: #364355;
+    --block-alt-prefilled-bg: #405269;
     --border: #79899c;
     --grid: #c5d0de;
     --incorrect-bg: #632c34;
@@ -137,6 +141,12 @@ h1 {
     color: var(--text);
     opacity: 1;
     transition: background 0.2s;
+}
+
+.sudoku-row:is(:nth-child(-n+3), :nth-child(n+7)) .sudoku-cell:nth-child(n+4):nth-child(-n+6),
+.sudoku-row:nth-child(n+4):nth-child(-n+6) .sudoku-cell:is(:nth-child(-n+3), :nth-child(n+7)) {
+    --cell-bg: var(--block-alt-bg);
+    --prefilled-bg: var(--block-alt-prefilled-bg);
 }
 
 .sudoku-cell:focus {
