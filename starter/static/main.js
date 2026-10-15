@@ -193,6 +193,7 @@ async function newGame() {
   msg.innerText = '';
   document.getElementById('score-entry').hidden = true;
   document.getElementById('player-name').value = '';
+  document.getElementById('difficulty-message').innerText = 'Difficulty changes apply when you click New Game.';
 }
 
 async function checkSolution() {
@@ -314,6 +315,11 @@ async function getHint() {
 
 // Wire buttons
 window.addEventListener('load', () => {
+  document.getElementById('difficulty').addEventListener('change', (event) => {
+    const difficulty = event.target.selectedOptions[0].textContent;
+    document.getElementById('difficulty-message').innerText =
+      `${difficulty} selected. This difficulty will apply when you click New Game. Your current game is unchanged.`;
+  });
   document.getElementById('new-game').addEventListener('click', newGame);
   document.getElementById('check-solution').addEventListener('click', checkSolution);
   document.getElementById('hint').addEventListener('click', getHint);

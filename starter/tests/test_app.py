@@ -25,6 +25,9 @@ def test_index_renders_sudoku_page(client):
     assert b'<option value="easy">Easy</option>' in response.data
     assert b'<option value="medium" selected>Medium</option>' in response.data
     assert b'<option value="hard">Hard</option>' in response.data
+    assert b'aria-describedby="difficulty-message"' in response.data
+    assert b'id="difficulty-message" role="status" aria-live="polite"' in response.data
+    assert b'Difficulty changes apply when you click New Game.' in response.data
     assert b'id="hint"' in response.data
     assert b'id="message" role="status" aria-live="polite"' in response.data
     assert b'id="leaderboard"' in response.data
