@@ -19,6 +19,8 @@ def test_index_renders_sudoku_page(client):
 
     assert response.status_code == 200
     assert b"Sudoku Game" in response.data
+    assert b'id="timer" role="timer"' in response.data
+    assert b'data-elapsed-seconds="0">00:00</span>' in response.data
     assert b'id="sudoku-board"' in response.data
     assert b'<option value="easy">Easy</option>' in response.data
     assert b'<option value="medium" selected>Medium</option>' in response.data

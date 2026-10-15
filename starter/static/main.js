@@ -1,6 +1,42 @@
 // Client-side rendering and interaction for the Flask-backed Sudoku
 const SIZE = 9;
 let puzzle = [];
+let timerInterval = null;
+let timerStartedAt = null;
+let elapsedSeconds = 0;
+
+function updateTimer() {
+  if (timerStartedAt !== null) {
+    elapsedSeconds = Math.floor((Date.now() - timerStartedAt) / 1000);
+  }
+  const timer = document.getElementById('timer');
+  const minutes = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
+  const seconds = (elapsedSeconds % 60).toString().padStart(2, '0');
+  timer.innerText = `${minutes}:${seconds}`;
+  timer.dataset.elapsedSeconds = elapsedSeconds;
+}
+
+function startTimer() {
+  if (timerInterval !== null) {
+    clearInterval(timerInterval);
+  }
+  elapsedSeconds = 0;
+  timerStartedAt = Date.now();
+  updateTimer();
+  timerInterval = setInterval(updateTimer, 250);
+}
+
+function stopTimer() {
+  if (timerStartedAt === null) {
+    return elapsedSeconds;
+  }
+  elapsedSeconds = Math.floor((Date.now() - timerStartedAt) / 1000);
+  timerStartedAt = null;
+  clearInterval(timerInterval);
+  timerInterval = null;
+  updateTimer();
+  return elapsedSeconds;
+}
 
 function createBoardElement() {
   const boardDiv = document.getElementById('sudoku-board');
@@ -56,6 +92,7 @@ async function newGame() {
     return;
   }
   renderPuzzle(data.puzzle);
+  startTimer();
   const msg = document.getElementById('message');
   msg.className = '';
   msg.innerText = '';
@@ -94,8 +131,9 @@ async function checkSolution() {
     inp.setAttribute('aria-invalid', isIncorrect ? 'true' : 'false');
   }
   if (incorrect.size === 0) {
+    stopTimer();
     msg.className = 'success';
-    msg.innerText = 'Congratulations! You solved it!';
+    msg.innerText = `Congratulations! You solved it in ${document.getElementById('timer').innerText}!`;
   } else {
     msg.className = 'error';
     msg.innerText = `${incorrect.size} cell${incorrect.size === 1 ? ' is' : 's are'} incorrect or incomplete.`;
