@@ -1,9 +1,100 @@
 // Client-side rendering and interaction for the Flask-backed Sudoku
 const SIZE = 9;
+const LEADERBOARD_KEY = 'sudokuTop10';
 let puzzle = [];
 let timerInterval = null;
 let timerStartedAt = null;
 let elapsedSeconds = 0;
+let hintsUsed = 0;
+let activeDifficulty = 'medium';
+let gameSolved = false;
+let pendingCompletionSeconds = null;
+
+function readLeaderboard() {
+  let scores;
+  try {
+    scores = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]');
+  } catch {
+    throw new Error('Leaderboard data could not be read or parsed.');
+  }
+  if (
+    !Array.isArray(scores)
+    || scores.some(score => (
+      score === null
+      || typeof score !== 'object'
+      || typeof score.name !== 'string'
+      || !Number.isInteger(score.timeSeconds)
+      || score.timeSeconds < 0
+      || !['easy', 'medium', 'hard'].includes(score.difficulty)
+      || !Number.isInteger(score.hintsUsed)
+      || score.hintsUsed < 0
+    ))
+  ) {
+    throw new Error('Leaderboard data in local storage is invalid.');
+  }
+  scores.sort((a, b) => a.timeSeconds - b.timeSeconds);
+  const topScores = scores.slice(0, 10);
+  if (scores.length > topScores.length) {
+    try {
+      localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(topScores));
+    } catch {
+      throw new Error('Leaderboard could not be saved to local storage.');
+    }
+  }
+  return topScores;
+}
+
+function renderLeaderboard() {
+  const tbody = document.querySelector('#leaderboard tbody');
+  const msg = document.getElementById('message');
+  try {
+    const scores = readLeaderboard();
+    tbody.replaceChildren();
+    scores.forEach((score, index) => {
+      const row = document.createElement('tr');
+      const values = [
+        index + 1,
+        score.name,
+        formatTime(score.timeSeconds),
+        score.difficulty,
+        score.hintsUsed
+      ];
+      values.forEach(value => {
+        const cell = document.createElement('td');
+        cell.textContent = value;
+        row.appendChild(cell);
+      });
+      tbody.appendChild(row);
+    });
+  } catch (error) {
+    msg.className = 'error';
+    msg.innerText = error.message;
+  }
+}
+
+function saveScore(name, timeSeconds) {
+  const scores = readLeaderboard();
+  scores.push({
+    name,
+    timeSeconds,
+    difficulty: activeDifficulty,
+    hintsUsed
+  });
+  scores.sort((a, b) => a.timeSeconds - b.timeSeconds);
+  const topScores = scores.slice(0, 10);
+  try {
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(topScores));
+  } catch {
+    throw new Error('Leaderboard could not be saved to local storage.');
+  }
+  renderLeaderboard();
+}
+
+function formatTime(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+  const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+  return `${minutes}:${seconds}`;
+}
 
 function updateTimer() {
   if (timerStartedAt !== null) {
@@ -91,14 +182,23 @@ async function newGame() {
     document.getElementById('message').innerText = data.error || 'Unable to start a new game.';
     return;
   }
+  activeDifficulty = difficulty;
+  hintsUsed = 0;
+  gameSolved = false;
+  pendingCompletionSeconds = null;
   renderPuzzle(data.puzzle);
   startTimer();
   const msg = document.getElementById('message');
   msg.className = '';
   msg.innerText = '';
+  document.getElementById('score-entry').hidden = true;
+  document.getElementById('player-name').value = '';
 }
 
 async function checkSolution() {
+  if (gameSolved) {
+    return;
+  }
   const boardDiv = document.getElementById('sudoku-board');
   const inputs = boardDiv.getElementsByTagName('input');
   const board = [];
@@ -131,16 +231,52 @@ async function checkSolution() {
     inp.setAttribute('aria-invalid', isIncorrect ? 'true' : 'false');
   }
   if (incorrect.size === 0) {
-    stopTimer();
+    pendingCompletionSeconds = stopTimer();
+    gameSolved = true;
+    for (const input of inputs) {
+      input.disabled = true;
+    }
     msg.className = 'success';
-    msg.innerText = `Congratulations! You solved it in ${document.getElementById('timer').innerText}!`;
+    msg.innerText = `Congratulations! You solved it in ${formatTime(pendingCompletionSeconds)}. Enter your name to save your score.`;
+    document.getElementById('score-entry').hidden = false;
+    document.getElementById('player-name').focus();
   } else {
     msg.className = 'error';
     msg.innerText = `${incorrect.size} cell${incorrect.size === 1 ? ' is' : 's are'} incorrect or incomplete.`;
   }
 }
 
+function submitScore() {
+  const msg = document.getElementById('message');
+  const nameInput = document.getElementById('player-name');
+  const name = nameInput.value.trim();
+  if (!name) {
+    msg.className = 'error';
+    msg.innerText = 'Enter your name to save your score.';
+    nameInput.focus();
+    return;
+  }
+  if (pendingCompletionSeconds === null) {
+    msg.className = 'error';
+    msg.innerText = 'Solve a puzzle before saving a score.';
+    return;
+  }
+  try {
+    saveScore(name.slice(0, 30), pendingCompletionSeconds);
+    pendingCompletionSeconds = null;
+    document.getElementById('score-entry').hidden = true;
+    msg.className = 'success';
+    msg.innerText = 'Your score has been saved to the Top 10 leaderboard.';
+  } catch (error) {
+    msg.className = 'error';
+    msg.innerText = error.message;
+  }
+}
+
 async function getHint() {
+  if (gameSolved) {
+    return;
+  }
   const inputs = document.getElementById('sudoku-board').getElementsByTagName('input');
   const board = [];
   for (let row = 0; row < SIZE; row++) {
@@ -171,6 +307,7 @@ async function getHint() {
   input.classList.add('hinted');
   input.setAttribute('aria-label', `Hint: ${data.value}`);
   input.setAttribute('aria-invalid', 'false');
+  hintsUsed += 1;
   msg.className = 'success';
   msg.innerText = 'Hint used: one correct cell has been filled and locked.';
 }
@@ -180,6 +317,8 @@ window.addEventListener('load', () => {
   document.getElementById('new-game').addEventListener('click', newGame);
   document.getElementById('check-solution').addEventListener('click', checkSolution);
   document.getElementById('hint').addEventListener('click', getHint);
+  document.getElementById('save-score').addEventListener('click', submitScore);
+  renderLeaderboard();
   // initialize
   newGame();
 });

@@ -27,6 +27,14 @@ def test_index_renders_sudoku_page(client):
     assert b'<option value="hard">Hard</option>' in response.data
     assert b'id="hint"' in response.data
     assert b'id="message" role="status" aria-live="polite"' in response.data
+    assert b'id="leaderboard"' in response.data
+    assert b'Top 10 Scores' in response.data
+    assert b'id="player-name"' in response.data
+    assert b'id="save-score"' in response.data
+    assert b'<th scope="col">Player</th>' in response.data
+    assert b'<th scope="col">Time</th>' in response.data
+    assert b'<th scope="col">Difficulty</th>' in response.data
+    assert b'<th scope="col">Hints</th>' in response.data
 
 
 def test_new_game_returns_and_stores_generated_puzzle(client, monkeypatch):

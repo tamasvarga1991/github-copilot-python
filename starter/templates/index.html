@@ -21,6 +21,26 @@
     <button id="hint">Hint</button>
     <span id="message" role="status" aria-live="polite"></span>
   </div>
+  <div id="score-entry" class="score-entry" hidden>
+    <label for="player-name">Your name for the leaderboard:</label>
+    <input id="player-name" name="player-name" type="text" maxlength="30" autocomplete="name">
+    <button id="save-score" type="button">Save Score</button>
+  </div>
+  <section class="leaderboard-section" aria-labelledby="leaderboard-heading">
+    <h2 id="leaderboard-heading">Top 10 Scores</h2>
+    <table id="leaderboard">
+      <thead>
+        <tr>
+          <th scope="col">Rank</th>
+          <th scope="col">Player</th>
+          <th scope="col">Time</th>
+          <th scope="col">Difficulty</th>
+          <th scope="col">Hints</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
   <script src="/static/main.js"></script>
 </body>
 </html>
