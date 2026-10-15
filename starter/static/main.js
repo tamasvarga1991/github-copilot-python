@@ -296,7 +296,7 @@ async function checkSolution() {
       input.disabled = true;
     }
     msg.className = 'success';
-    msg.innerText = `Congratulations! You solved it in ${formatTime(pendingCompletionSeconds)}. Enter your name to save your score.`;
+    msg.innerText = `Congratulations! You solved it in ${formatTime(pendingCompletionSeconds)} with ${hintsUsed} hint${hintsUsed === 1 ? '' : 's'} used. Enter your name to save your score.`;
     document.getElementById('score-entry').hidden = false;
     document.getElementById('player-name').focus();
   } else {

@@ -97,6 +97,21 @@
         enter(0, 1, '8');
         assert(conflicting(0, 0), 'Delegation works on newly rendered board');
         results.push('PASS: hints and newly rendered boards');
+        const originalFetch = window.fetch;
+        window.fetch = async () => ({ok: true, json: async () => ({incorrect: []})});
+        try {
+          for (const count of [0, 1, 3]) {
+            gameSolved = false;
+            hintsUsed = count;
+            await checkSolution();
+            const expected = `with ${count} hint${count === 1 ? '' : 's'} used.`;
+            assert(document.getElementById('message').innerText.includes(expected),
+              `Completion message includes ${count} hints with correct grammar`);
+          }
+          results.push('PASS: completion message includes zero, one, and multiple hints');
+        } finally {
+          window.fetch = originalFetch;
+        }
         document.getElementById('results').textContent = results.join('\n') + '\nAll tests passed.';
       } catch (error) {
         document.getElementById('results').textContent = results.join('\n') + '\nFAIL: ' + error.message;
