@@ -143,13 +143,15 @@ h1 {
     background: var(--focus-bg);
 }
 
-.sudoku-cell.incorrect {
+.sudoku-cell.incorrect,
+.sudoku-cell.conflict {
     background: var(--incorrect-bg);
     border-color: var(--incorrect-border);
     box-shadow: inset 0 0 0 1px var(--incorrect-border);
 }
 
-.sudoku-cell.incorrect:focus {
+.sudoku-cell.incorrect:focus,
+.sudoku-cell.conflict:focus {
     background: var(--incorrect-bg);
 }
 

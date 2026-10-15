@@ -184,13 +184,27 @@ function createBoardElement() {
       input.className = 'sudoku-cell';
       input.dataset.row = i;
       input.dataset.col = j;
-      input.addEventListener('input', (e) => {
-        const val = e.target.value.replace(/[^1-9]/g, '');
-        e.target.value = val;
-      });
       rowDiv.appendChild(input);
     }
     boardDiv.appendChild(rowDiv);
+  }
+}
+
+function validateBoardConflicts() {
+  const inputs = Array.from(document.querySelectorAll('#sudoku-board input'));
+  for (const input of inputs) {
+    const row = Number(input.dataset.row);
+    const col = Number(input.dataset.col);
+    const conflict = !input.disabled && input.value !== '' && inputs.some(other => {
+      if (other === input || other.value !== input.value) return false;
+      const otherRow = Number(other.dataset.row);
+      const otherCol = Number(other.dataset.col);
+      return row === otherRow || col === otherCol
+        || (Math.floor(row / 3) === Math.floor(otherRow / 3)
+          && Math.floor(col / 3) === Math.floor(otherCol / 3));
+    });
+    input.classList.toggle('conflict', conflict);
+    input.setAttribute('aria-invalid', String(conflict || input.classList.contains('incorrect')));
   }
 }
 
@@ -273,7 +287,7 @@ async function checkSolution() {
     if (inp.disabled) continue;
     const isIncorrect = incorrect.has(idx);
     inp.classList.toggle('incorrect', isIncorrect);
-    inp.setAttribute('aria-invalid', isIncorrect ? 'true' : 'false');
+    inp.setAttribute('aria-invalid', String(isIncorrect || inp.classList.contains('conflict')));
   }
   if (incorrect.size === 0) {
     pendingCompletionSeconds = stopTimer();
@@ -353,6 +367,7 @@ async function getHint() {
   input.classList.add('hinted');
   input.setAttribute('aria-label', `Hint: ${data.value}`);
   input.setAttribute('aria-invalid', 'false');
+  validateBoardConflicts();
   hintsUsed += 1;
   msg.className = 'success';
   msg.innerText = correctingEntry
@@ -362,6 +377,13 @@ async function getHint() {
 
 // Wire buttons
 window.addEventListener('load', () => {
+  document.getElementById('sudoku-board').addEventListener('input', (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || input.disabled) return;
+    input.value = input.value.replace(/[^1-9]/g, '').slice(0, 1);
+    input.classList.remove('incorrect');
+    validateBoardConflicts();
+  });
   initializeTheme();
   document.getElementById('theme-toggle').addEventListener('change', toggleTheme);
   document.getElementById('difficulty').addEventListener('change', (event) => {

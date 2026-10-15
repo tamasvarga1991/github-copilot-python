@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Sudoku input feedback tests</title>
+</head>
+<body>
+  <h1>Sudoku input feedback tests</h1>
+  <pre id="results">Running...</pre>
+  <div hidden>
+    <input id="theme-toggle" type="checkbox">
+    <span id="theme-label"></span>
+    <p id="theme-message" hidden></p>
+    <span id="timer"></span>
+    <span id="current-difficulty"></span>
+    <select id="difficulty"><option value="medium">Medium</option></select>
+    <span id="difficulty-message"></span>
+    <div id="sudoku-board"></div>
+    <button id="new-game"></button>
+    <button id="check-solution"></button>
+    <button id="hint"></button>
+    <span id="message"></span>
+    <div id="score-entry" hidden><input id="player-name"><button id="save-score"></button></div>
+    <table id="leaderboard"><tbody></tbody></table>
+  </div>
+  <script>
+    const emptyBoard = () => Array.from({length: 9}, () => Array(9).fill(0));
+    Object.defineProperty(window, 'localStorage', {
+      value: {getItem: () => null, setItem: () => {}}
+    });
+    window.fetch = async url => ({
+      ok: true,
+      json: async () => url.startsWith('/new')
+        ? {puzzle: emptyBoard()}
+        : url === '/hint' ? {row: 0, col: 0, value: 5} : {incorrect: [[0, 0]]}
+    });
+  </script>
+  <script src="../static/main.js"></script>
+  <script>
+    window.addEventListener('load', async () => {
+      const results = [];
+      const assert = (condition, message) => {
+        if (!condition) throw new Error(message);
+      };
+      const cell = (row, col) => document.querySelector(
+        `#sudoku-board input[data-row="${row}"][data-col="${col}"]`
+      );
+      const enter = (row, col, value) => {
+        cell(row, col).value = value;
+        cell(row, col).dispatchEvent(new Event('input', {bubbles: true}));
+      };
+      const conflicting = (row, col) => cell(row, col).classList.contains('conflict');
+      try {
+        await newGame();
+        for (const [name, row, col] of [['row', 0, 4], ['column', 4, 0], ['box', 1, 1]]) {
+          renderPuzzle(emptyBoard());
+          enter(0, 0, '5');
+          enter(row, col, '5');
+          assert(conflicting(0, 0) && conflicting(row, col), `${name}: both duplicates highlighted`);
+          assert(cell(row, col).getAttribute('aria-invalid') === 'true', `${name}: accessible invalid state`);
+          enter(row, col, '6');
+          assert(!conflicting(0, 0) && !conflicting(row, col), `${name}: highlights clear after correction`);
+          enter(row, col, '5');
+          enter(0, 0, '');
+          assert(!conflicting(row, col), `${name}: highlight clears after deletion`);
+          results.push(`PASS: ${name} conflicts, correction, and deletion`);
+        }
+        const puzzle = emptyBoard();
+        puzzle[0][0] = 5;
+        renderPuzzle(puzzle);
+        enter(0, 1, '5');
+        assert(conflicting(0, 1) && !conflicting(0, 0), 'Only editable entry highlighted against clue');
+        assert(cell(0, 0).disabled && cell(0, 0).value === '5', 'Original clue unchanged');
+        results.push('PASS: conflicts with locked clues');
+        renderPuzzle(emptyBoard());
+        enter(0, 0, '5');
+        enter(4, 4, '5');
+        assert(!conflicting(0, 0) && !conflicting(4, 4), 'Unrelated equal digits allowed');
+        enter(0, 0, 'x');
+        assert(cell(0, 0).value === '', 'Non-digit input filtered');
+        results.push('PASS: legal entries and input filtering');
+        enter(0, 0, '7');
+        await checkSolution();
+        assert(cell(0, 0).classList.contains('incorrect'), 'Check still highlights wrong solution entry');
+        enter(0, 0, '6');
+        assert(!cell(0, 0).classList.contains('incorrect'), 'Editing clears stale Check highlight');
+        assert(cell(0, 0).getAttribute('aria-invalid') === 'false', 'Corrected invalid state clears');
+        results.push('PASS: Check behavior retained');
+        renderPuzzle(emptyBoard());
+        enter(0, 1, '5');
+        await getHint();
+        assert(cell(0, 0).disabled && conflicting(0, 1), 'Hint placement revalidates other entries');
+        enter(0, 1, '');
+        assert(!conflicting(0, 1), 'Conflict with hint clears');
+        renderPuzzle(emptyBoard());
+        enter(0, 0, '8');
+        enter(0, 1, '8');
+        assert(conflicting(0, 0), 'Delegation works on newly rendered board');
+        results.push('PASS: hints and newly rendered boards');
+        document.getElementById('results').textContent = results.join('\n') + '\nAll tests passed.';
+      } catch (error) {
+        document.getElementById('results').textContent = results.join('\n') + '\nFAIL: ' + error.message;
+        throw error;
+      } finally {
+        stopTimer();
+      }
+    });
+  </script>
+</body>
+</html>
