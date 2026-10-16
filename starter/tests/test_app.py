@@ -126,6 +126,55 @@ def test_check_without_active_game_returns_error(client):
     assert response.json == {"error": "No game in progress"}
 
 
+@pytest.mark.parametrize("error_type", [RuntimeError, OSError])
+@pytest.mark.parametrize("active_game", [False, True])
+def test_new_game_handles_generation_failure(
+    client, monkeypatch, caplog, error_type, active_game
+):
+    if active_game:
+        sudoku_app.CURRENT["puzzle"] = [[0] * 9 for _ in range(9)]
+        sudoku_app.CURRENT["solution"] = [[1] * 9 for _ in range(9)]
+    before = copy.deepcopy(sudoku_app.CURRENT)
+
+    def fail_generation(clues):
+        raise error_type("Internal generation details")
+
+    monkeypatch.setattr(sudoku_app.sudoku_logic, "generate_puzzle", fail_generation)
+
+    response = client.get("/new?difficulty=hard")
+
+    assert response.status_code == 500
+    assert response.json == {
+        "error": "Unable to generate a puzzle. Please try starting a new game."
+    }
+    assert sudoku_app.CURRENT == before
+    assert any(record.exc_info for record in caplog.records)
+    assert b"Internal generation details" not in response.data
+
+
+@pytest.mark.parametrize("clues", [16, 82])
+def test_new_game_returns_json_for_out_of_range_clues(client, clues):
+    response = client.get(f"/new?clues={clues}")
+
+    assert response.status_code == 400
+    assert response.json == {"error": "clues must be between 17 and 81"}
+    assert sudoku_app.CURRENT == {"puzzle": None, "solution": None}
+
+
+def test_new_game_rejects_non_integer_clues_before_generation(client, monkeypatch):
+    def unexpected_generation(clues):
+        pytest.fail("Invalid clue input must not reach generation")
+
+    monkeypatch.setattr(
+        sudoku_app.sudoku_logic, "generate_puzzle", unexpected_generation
+    )
+
+    response = client.get("/new?clues=invalid&difficulty=hard")
+
+    assert response.status_code == 400
+    assert response.json == {"error": "Clues must be an integer"}
+
+
 def test_check_returns_coordinates_of_cells_that_differ(client):
     solution = [[0 for _ in range(9)] for _ in range(9)]
     solution[0][0] = 5
@@ -236,11 +285,66 @@ def test_hint_prefers_empty_cells_over_wrong_entries(client, monkeypatch):
     assert response.json == {"row": 0, "col": 1, "value": 1}
 
 
-def test_hint_rejects_invalid_board_payload(client):
-    sudoku_app.CURRENT["puzzle"] = [[0 for _ in range(9)] for _ in range(9)]
-    sudoku_app.CURRENT["solution"] = [[1 for _ in range(9)] for _ in range(9)]
+@pytest.mark.parametrize("route", ["/hint", "/check"])
+@pytest.mark.parametrize(
+    "request_options",
+    [
+        pytest.param({}, id="empty-body"),
+        pytest.param(
+            {"data": '{"board":', "content_type": "application/json"},
+            id="malformed-json",
+        ),
+        pytest.param(
+            {"data": "null", "content_type": "application/json"},
+            id="null-json",
+        ),
+        pytest.param(
+            {"data": '{"board": []}', "content_type": "text/plain"},
+            id="non-json-content-type",
+        ),
+        pytest.param({"json": []}, id="array-payload"),
+        pytest.param({"json": "board"}, id="string-payload"),
+        pytest.param({"json": 42}, id="number-payload"),
+        pytest.param({"json": {}}, id="missing-board"),
+        pytest.param({"json": {"board": None}}, id="null-board"),
+        pytest.param({"json": {"board": {}}}, id="object-board"),
+        pytest.param({"json": {"board": "0" * 9}}, id="string-board"),
+        pytest.param({"json": {"board": [[0] * 9] * 8}}, id="too-few-rows"),
+        pytest.param({"json": {"board": [[0] * 9] * 10}}, id="too-many-rows"),
+        pytest.param({"json": {"board": [[0] * 8] * 9}}, id="too-few-columns"),
+        pytest.param({"json": {"board": [[0] * 10] * 9}}, id="too-many-columns"),
+        pytest.param(
+            {"json": {"board": [[0] * 9] * 8 + [None]}}, id="null-row"
+        ),
+        pytest.param(
+            {"json": {"board": [[0] * 9] * 8 + ["0" * 9]}}, id="string-row"
+        ),
+        *[
+            pytest.param(
+                {"json": {"board": [[0] * 9] * 8 + [[0] * 8 + [value]]}},
+                id=f"invalid-cell-{name}",
+            )
+            for name, value in [
+                ("negative", -1),
+                ("above-nine", 10),
+                ("true", True),
+                ("false", False),
+                ("float", 1.0),
+                ("string", "1"),
+                ("null", None),
+                ("list", []),
+                ("object", {}),
+            ]
+        ],
+    ],
+)
+def test_board_routes_reject_invalid_payload(client, route, request_options):
+    sudoku_app.CURRENT["puzzle"] = [[0] * 9 for _ in range(9)]
+    sudoku_app.CURRENT["solution"] = [[1] * 9 for _ in range(9)]
+    before = copy.deepcopy(sudoku_app.CURRENT)
 
-    response = client.post("/hint", json={"board": [[0] * 8 for _ in range(9)]})
+    response = client.post(route, **request_options)
 
     assert response.status_code == 400
     assert response.json == {"error": "A valid 9x9 board is required"}
+    assert sudoku_app.CURRENT == before

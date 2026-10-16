@@ -98,7 +98,9 @@ nine integer values each; `0` is empty and `1` through `9` are digits.
   explicit validation/no-game/no-hint errors use HTTP 400.
 - Validate untrusted request data at the boundary. For board payloads require the
   shape and range above and reject booleans, which Python otherwise treats as ints.
-  `/hint` implements this validation; `/check` currently does not fully do so.
+  `/hint` and `/check` share `is_valid_board` in `starter/app.py` and return
+  `{"error": "A valid 9x9 board is required"}` with HTTP 400 for invalid boards
+  when a game is active. Both retain the no-game error when no game is active.
 - Do not require a submitted board to be conflict-free before Check or Hint:
   finding or correcting mistakes is their purpose.
 - Complete generation before replacing `CURRENT`. Failed requests must not leave
@@ -207,11 +209,11 @@ nine integer values each; `0` is empty and `1` through `9` are digits.
 Apply these guidelines when touching error paths; they are not claims that all
 existing paths already implement them:
 
-- Handle expected validation and generation failures explicitly. Map invalid clue
-  bounds to a client error and generation exhaustion to a suitable server error,
-  with JSON messages rather than HTML tracebacks.
-- Catch only expected exceptions at a useful boundary. Log unexpected server
-  failures using Flask's logger without exposing tracebacks to the browser.
+- `/new` returns invalid clue bounds as JSON with HTTP 400. Generation failures
+  return HTTP 500 with a retry message, leaving the previous game unchanged.
+- Handle expected exceptions explicitly. The generation call has a narrowly
+  scoped exception boundary that logs failures using Flask's logger without
+  exposing internal details or tracebacks to the browser.
   Do not use broad catches to manufacture success or silently discard errors.
 - Client API handling should cover network failures, non-JSON responses, and
   non-success statuses. Keep the current board and timer intact when New Game
@@ -220,8 +222,8 @@ existing paths already implement them:
   silently erase corrupt leaderboard data or claim a score was saved after a
   failed write. Use `message`, `theme-message`, and `difficulty-message` for their
   respective concerns.
-- Existing gaps include incomplete `/check` validation, unhandled generation and
-  fetch/JSON failures, shared `CURRENT`, and lack of stale-response/concurrent
+- Existing gaps include unhandled client fetch/JSON failures, shared
+  `CURRENT`, and lack of stale-response/concurrent
   request guards. Startup New Game can also clear a leaderboard error message.
   Do not document these as fixed without implementation and regression tests.
 - The `debug=True` entry point is for local development, not production

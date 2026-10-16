@@ -10,6 +10,22 @@ CURRENT = {
     'solution': None
 }
 
+def is_valid_board(board):
+    return (
+        isinstance(board, list)
+        and len(board) == sudoku_logic.SIZE
+        and all(
+            isinstance(row, list) and len(row) == sudoku_logic.SIZE
+            for row in board
+        )
+        and all(
+            isinstance(value, int) and not isinstance(value, bool)
+            and sudoku_logic.EMPTY <= value <= sudoku_logic.SIZE
+            for row in board
+            for value in row
+        )
+    )
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -27,18 +43,31 @@ def new_game():
         if clues is None:
             return jsonify({'error': 'Difficulty must be easy, medium, or hard'}), 400
 
-    puzzle, solution = sudoku_logic.generate_puzzle(clues)
+    try:
+        puzzle, solution = sudoku_logic.generate_puzzle(clues)
+    except ValueError as error:
+        return jsonify({'error': str(error)}), 400
+    except Exception:
+        app.logger.exception('Puzzle generation failed for %s clues', clues)
+        return jsonify({
+            'error': 'Unable to generate a puzzle. Please try starting a new game.'
+        }), 500
+
     CURRENT['puzzle'] = puzzle
     CURRENT['solution'] = solution
     return jsonify({'puzzle': puzzle})
 
 @app.route('/check', methods=['POST'])
 def check_solution():
-    data = request.json
-    board = data.get('board')
     solution = CURRENT.get('solution')
     if solution is None:
         return jsonify({'error': 'No game in progress'}), 400
+
+    data = request.get_json(silent=True)
+    board = data.get('board') if isinstance(data, dict) else None
+    if not is_valid_board(board):
+        return jsonify({'error': 'A valid 9x9 board is required'}), 400
+
     incorrect = []
     for i in range(sudoku_logic.SIZE):
         for j in range(sudoku_logic.SIZE):
@@ -55,17 +84,7 @@ def get_hint():
 
     data = request.get_json(silent=True)
     board = data.get('board') if isinstance(data, dict) else None
-    if (
-        not isinstance(board, list)
-        or len(board) != sudoku_logic.SIZE
-        or any(not isinstance(row, list) or len(row) != sudoku_logic.SIZE for row in board)
-        or any(
-            not isinstance(value, int) or isinstance(value, bool)
-            or value < sudoku_logic.EMPTY or value > sudoku_logic.SIZE
-            for row in board
-            for value in row
-        )
-    ):
+    if not is_valid_board(board):
         return jsonify({'error': 'A valid 9x9 board is required'}), 400
 
     empty_cells = [
